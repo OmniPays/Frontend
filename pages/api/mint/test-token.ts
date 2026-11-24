@@ -8,6 +8,11 @@ import {
   nativeToScVal,
   rpc,
 } from '@stellar/stellar-sdk';
+import {
+  applyCorsHeaders,
+  handlePreflight,
+  rejectIfOriginNotAllowed,
+} from '../../../src/server/apiGuards';
 
 const RPC_OVERRIDE_KEYS: Record<string, string> = {
   [Networks.TESTNET]: 'TESTNET_RPC_URL',
@@ -26,6 +31,38 @@ const DEFAULT_RPC_URLS: Record<string, string> = {
 const ACCOUNT_ID_PATTERN = /^G[A-Z2-7]{55}$/;
 const CONTRACT_ID_PATTERN = /^C[A-Z2-7]{55}$/;
 const AMOUNT_PATTERN = /^[1-9][0-9]{0,29}$/;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 20;
+const mintAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function getAllowedContracts(): Set<string> {
+  return new Set(
+    (process.env.MINT_ALLOWED_CONTRACTS ?? '')
+      .split(',')
+      .map((contractId) => contractId.trim())
+      .filter((contractId) => CONTRACT_ID_PATTERN.test(contractId)),
+  );
+}
+
+function clientKey(req: NextApiRequest): string {
+  const forwarded = req.headers['x-forwarded-for'];
+  const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+  return value?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+}
+
+function isRateLimited(req: NextApiRequest): boolean {
+  const key = clientKey(req);
+  const now = Date.now();
+  const current = mintAttempts.get(key);
+
+  if (!current || current.resetAt <= now) {
+    mintAttempts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  current.count++;
+  return current.count > RATE_LIMIT_MAX_REQUESTS;
+}
 
 type MintBody = {
   network: string;
@@ -70,6 +107,10 @@ async function waitForTransaction(server: rpc.Server, hash: string) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (handlePreflight(req, res)) return;
+  if (rejectIfOriginNotAllowed(req, res)) return;
+  applyCorsHeaders(req, res);
+
   if (req.method === 'GET') {
     const adminKeypair = getAdminKeypair();
     if (!adminKeypair) {
@@ -83,9 +124,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
+  if (isRateLimited(req)) {
+    return res.status(429).json({ message: 'Too many mint requests' });
+  }
+
   const body = parseBody(req.body);
   if (!body) {
     return res.status(400).json({ message: 'Invalid mint request' });
+  }
+
+  if (!getAllowedContracts().has(body.contractId)) {
+    return res.status(403).json({ message: 'Contract is not allowed for test minting' });
   }
 
   const adminKeypair = getAdminKeypair();
