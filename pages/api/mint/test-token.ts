@@ -45,15 +45,23 @@ function getAllowedContracts(): Set<string> {
 }
 
 function clientKey(req: NextApiRequest): string {
-  const forwarded = req.headers['x-forwarded-for'];
-  const value = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-  return value?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  return req.socket.remoteAddress || 'unknown';
 }
 
 function isRateLimited(req: NextApiRequest): boolean {
   const key = clientKey(req);
   const now = Date.now();
   const current = mintAttempts.get(key);
+
+  if (mintAttempts.size >= 1000) {
+    for (const [entryKey, entry] of mintAttempts) {
+      if (entry.resetAt <= now) mintAttempts.delete(entryKey);
+    }
+    if (mintAttempts.size >= 1000) {
+      const oldestKey = mintAttempts.keys().next().value;
+      if (oldestKey) mintAttempts.delete(oldestKey);
+    }
+  }
 
   if (!current || current.resetAt <= now) {
     mintAttempts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
@@ -107,9 +115,9 @@ async function waitForTransaction(server: rpc.Server, hash: string) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (handlePreflight(req, res)) return;
+  if (handlePreflight(req, res, ['GET', 'POST'])) return;
   if (rejectIfOriginNotAllowed(req, res)) return;
-  applyCorsHeaders(req, res);
+  applyCorsHeaders(req, res, 'GET, POST, OPTIONS');
 
   if (req.method === 'GET') {
     const adminKeypair = getAdminKeypair();

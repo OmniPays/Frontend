@@ -40,9 +40,9 @@ function getRequestOrigin(req: NextApiRequest): string | undefined {
   }
 }
 
-function isSameOrigin(req: NextApiRequest, origin: string): boolean {
+function getExpectedOrigin(req: NextApiRequest): string | undefined {
   const host = req.headers.host;
-  if (!host) return false;
+  if (!host) return undefined;
 
   const forwardedProtocol = req.headers['x-forwarded-proto'];
   const protocolValue = Array.isArray(forwardedProtocol)
@@ -51,14 +51,18 @@ function isSameOrigin(req: NextApiRequest, origin: string): boolean {
   const protocol = protocolValue?.split(',')[0]?.trim() ||
     (process.env.NODE_ENV === 'production' ? 'https' : 'http');
 
-  return origin === `${protocol}://${host}`;
+  return `${protocol}://${host}`;
 }
 
 export function isAllowedOrigin(req: NextApiRequest): boolean {
   const origin = getRequestOrigin(req);
   if (!origin) return false;
 
-  return isSameOrigin(req, origin) || LOCAL_ORIGINS.has(origin) || getConfiguredOrigins().has(origin);
+  const allowedOrigins = new Set([...LOCAL_ORIGINS, ...getConfiguredOrigins()]);
+  if (allowedOrigins.has(origin)) return true;
+
+  const expectedOrigin = getExpectedOrigin(req);
+  return !!expectedOrigin && allowedOrigins.has(expectedOrigin) && expectedOrigin === origin;
 }
 
 export function rejectIfOriginNotAllowed(req: NextApiRequest, res: NextApiResponse): boolean {
@@ -80,21 +84,39 @@ export function rejectIfMethodNotAllowed(
   return true;
 }
 
-export function applyCorsHeaders(req: NextApiRequest, res: NextApiResponse): void {
+export function applyCorsHeaders(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  methods = 'GET, POST, OPTIONS',
+): void {
   const origin = getRequestOrigin(req);
   if (!origin || !isAllowedOrigin(req)) return;
 
   res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', methods);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Vary', 'Origin');
+  res.setHeader('Vary', 'Origin, Referer');
 }
 
-export function handlePreflight(req: NextApiRequest, res: NextApiResponse): boolean {
+export function handlePreflight(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  allowedMethods: string[] = ['GET', 'POST'],
+): boolean {
   if (req.method !== 'OPTIONS') return false;
   if (rejectIfOriginNotAllowed(req, res)) return true;
 
-  applyCorsHeaders(req, res);
+  const requestedMethod = req.headers['access-control-request-method'];
+  if (
+    typeof requestedMethod === 'string' &&
+    !allowedMethods.includes(requestedMethod.toUpperCase())
+  ) {
+    res.setHeader('Allow', allowedMethods.join(', '));
+    res.status(405).json({ message: 'Method Not Allowed' });
+    return true;
+  }
+
+  applyCorsHeaders(req, res, `${allowedMethods.join(', ')}, OPTIONS`);
   res.status(204).end();
   return true;
 }

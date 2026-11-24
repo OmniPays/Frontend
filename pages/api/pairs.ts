@@ -11,9 +11,9 @@ import {
 } from '../../src/server/apiGuards';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (handlePreflight(req, res)) return;
+  if (handlePreflight(req, res, ['GET'])) return;
   if (rejectIfOriginNotAllowed(req, res)) return;
-  applyCorsHeaders(req, res);
+  applyCorsHeaders(req, res, 'GET, OPTIONS');
   if (rejectIfMethodNotAllowed(req, res, 'GET')) return;
 
   const network = getQueryValue(req.query.network);
