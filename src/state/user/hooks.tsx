@@ -23,7 +23,7 @@ export function useUserSlippageTolerance(): [
         () =>
             userSlippageToleranceRaw === SlippageTolerance.Auto
                 ? SlippageTolerance.Auto
-                : userSlippageToleranceRaw,
+                : Number(userSlippageToleranceRaw),
         [userSlippageToleranceRaw]
     )
 
