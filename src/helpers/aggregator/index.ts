@@ -28,7 +28,6 @@ export interface DexDistribution {
 export function poolHashesToScVal(poolHashes?: string[]): xdr.ScVal {
   // Handle undefined or empty array: return Option::None
   if (!poolHashes || poolHashes.length === 0) {
-    console.log("🚀 ~ poolHashesToScVal ~ poolHashes:", poolHashes)
     return  nativeToScVal(null);
     
   }
@@ -65,7 +64,6 @@ export function poolHashesToScVal(poolHashes?: string[]): xdr.ScVal {
 export const dexDistributionParser = (dexDistributionRaw: DexDistribution[]): xdr.ScVal => {
   
 
-  console.log("🚀 ~ dexDistributionRaw:", dexDistributionRaw)
   const dexDistributionScVal = dexDistributionRaw.map((distribution) => {
 
     let protocol_id_num;
@@ -99,8 +97,6 @@ export const dexDistributionParser = (dexDistributionRaw: DexDistribution[]): xd
       }),
     ]);
   });
-  console.log("🚀 ~ dexDistributionScVal ~ dexDistributionScVal:", dexDistributionScVal)
-
   return xdr.ScVal.scvVec(dexDistributionScVal);
 };
 

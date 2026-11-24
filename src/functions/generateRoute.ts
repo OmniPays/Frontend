@@ -72,9 +72,7 @@ export const useSoroswapApi = () => {
     return newProtocols as Protocol[];
   }, [protocolsStatus]);
 
-  const resetRouterSdkCache = () => {
-    console.log('Resetting router cache');
-  };
+  const resetRouterSdkCache = () => {};
 
   const generateRoute = async ({
     amountAsset,
@@ -270,7 +268,6 @@ export const useSoroswapApi = () => {
 
       try {
         const response = await getQuote(network, swapRequest);
-        console.log("🚀 | useSoroswapApi | response:", response)
 
         sorobanPath = (response?.platform as any) === "Soroswap Aggregator" && response?.tradeType === "EXACT_IN" ? {
           assetIn: response?.assetIn,
@@ -339,7 +336,6 @@ export const useSoroswapApi = () => {
         return undefined;
       }
     }
-    console.log("🚀 | sorobanPath:", sorobanPath)
     const bestPath = getBestPath(horizonPath, sorobanPath, tradeType);
     return bestPath;
   };
