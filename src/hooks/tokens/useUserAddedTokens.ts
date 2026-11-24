@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { tokensToMap } from './utils';
 import { passphraseToBackendNetworkName } from 'services/pairs';
 
-//Returns tokens added by the user
 export const useUserAddedTokens = () => {
   const sorobanContext = useSorobanReact();
 
@@ -12,22 +11,24 @@ export const useUserAddedTokens = () => {
   const [tokensFromActiveChain, setTokensFromActiveChain] = useState<TokenType[]>([]);
   const [tokensAsMap, setTokensAsMap] = useState<TokenMapType>({});
 
-  const userAddedTokensLocalStorage = localStorage.getItem(`userAddedTokens`);
-
   useEffect(() => {
     const userAddedTokensStr = localStorage.getItem(`userAddedTokens`) || '[]';
-    const userAddedTokens = (JSON.parse(userAddedTokensStr) ?? []) as tokensResponse[];
+    let storedTokens: tokensResponse[] = [];
+    try {
+      storedTokens = (JSON.parse(userAddedTokensStr) ?? []) as tokensResponse[];
+    } catch {
+      storedTokens = [];
+    }
+
     const activeNetwork = sorobanContext.activeNetwork;
     const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
-    const tokensFromActiveChain =
-      userAddedTokens?.find((item: tokensResponse) => item?.network === activeChain)?.tokens ?? [];
-    const tokensAsMap = tokensToMap(tokensFromActiveChain);
+    const activeChainTokens =
+      storedTokens?.find((item: tokensResponse) => item?.network === activeChain)?.tokens ?? [];
 
-    setUserAddedTokens(userAddedTokens);
-
-    setTokensFromActiveChain(tokensFromActiveChain);
-    setTokensAsMap(tokensAsMap);
-  }, [sorobanContext, userAddedTokensLocalStorage]);
+    setUserAddedTokens(storedTokens);
+    setTokensFromActiveChain(activeChainTokens);
+    setTokensAsMap(tokensToMap(activeChainTokens));
+  }, [sorobanContext.activeNetwork]);
 
   return {
     allUserAddedTokens: userAddedTokens,

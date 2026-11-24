@@ -23,5 +23,5 @@ export const useRouterAddress = () => {
     setRouter(data.address)
   }, [data, sorobanContext]);
 
-  return { router, isLoading, isError: error, data };
+  return { router, isLoading, isError: error, data, mutate };
 };
