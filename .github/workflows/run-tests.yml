@@ -28,7 +28,10 @@ jobs:
           node-version: '20.18.0'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
+
+      - name: Run unit tests
+        run: yarn test:unit
 
       - name: Build app
         run: yarn build
@@ -57,7 +60,7 @@ jobs:
           node-version: '20.10.0'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: Install cypress
         run: yarn cypress install --force
