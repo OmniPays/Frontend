@@ -117,7 +117,7 @@ const getLpResultsFromBlockchainPairs = async (
         ?.multipliedBy(reservesResponse?.reserve0)
         .dividedBy(totalShares);
       const myReserve1 = BigNumber(pairLpTokens as BigNumber)
-        ?.multipliedBy(reservesResponse?.reserve0)
+        ?.multipliedBy(reservesResponse?.reserve1)
         .dividedBy(totalShares);
 
       const toReturn = {
