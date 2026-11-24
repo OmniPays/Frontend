@@ -5,11 +5,11 @@ import { xlmTokenList } from 'constants/xlmToken';
 import { useEffect, useState } from 'react';
 import { Field } from 'state/swap/actions';
 import { SwapState } from 'state/swap/reducer';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export default function SwapPage() {
   const { activeNetwork } = useSorobanReact();
-  const activeChain = passphraseToBackendNetworkName[activeNetwork ?? WalletNetwork.TESTNET].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork ?? WalletNetwork.TESTNET);
   const [xlmToken, setXlmToken] = useState<string | null>(null);
   const [prefilledState, setPrefilledState] = useState<Partial<SwapState>>({
     [Field.INPUT]: { currencyId: null },

@@ -2,13 +2,13 @@ import { SorobanContextType, useSorobanReact } from 'stellar-react';
 import { useEffect, useState } from 'react';
 import { fetchRouter } from 'services/router';
 import useSWRImmutable from 'swr/immutable';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export const useRouterAddress = () => {
   const sorobanContext: SorobanContextType = useSorobanReact();
 
   const { activeNetwork } = sorobanContext;
-  const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
   const { data, error, isLoading, mutate } = useSWRImmutable(
     ['router', activeChain],
     ([key, activeChain]) =>

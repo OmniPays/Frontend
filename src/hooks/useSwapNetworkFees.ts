@@ -7,7 +7,7 @@ import { TokenType } from 'interfaces';
 import useSWRImmutable from 'swr/immutable';
 import { useContext } from 'react';
 import { AppContext } from 'contexts';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 type Currencies = {
   INPUT?: TokenType | null | undefined;
@@ -37,7 +37,7 @@ const useSwapNetworkFees = (trade: InterfaceTrade | undefined, currencies: Curre
 
     const { activeNetwork } = sorobanContext;
     if (!activeNetwork) return false;
-    const chainId = passphraseToBackendNetworkName[activeNetwork].toLowerCase();
+    const chainId = getBackendNetworkName(activeNetwork);
 
     const xlmTokenContract = xlmTokenList.find((tList) => tList.network === chainId)?.assets?.[0]
       ?.contract;

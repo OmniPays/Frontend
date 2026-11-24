@@ -3,7 +3,7 @@ import { contractTransaction, SorobanContextType } from 'stellar-react';
 import { fetchRouter } from 'services/router';
 import { InterfaceTrade, PlatformType } from 'state/routing/types';
 import { RouterMethod } from 'hooks/useRouterCallback';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 const getCurrentTimePlusOneHour = (): number => {
   // Get the current time in milliseconds
@@ -37,7 +37,7 @@ export async function calculateSwapFees(
     op = RouterMethod.SWAP_EXACT_IN;
   }
   const { activeNetwork, sorobanServer } = sorobanContext;
-  const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
   const { networkPassphrase: passphrase, id: network } = {
     networkPassphrase: activeNetwork,
     id: activeChain,
@@ -96,7 +96,7 @@ export async function calculateLiquidityFees(
   }
 
   const passphrase = sorobanContext.activeNetwork;
-  const network = passphraseToBackendNetworkName[passphrase!].toLowerCase();
+  const network = getBackendNetworkName(passphrase);
 
   const adminPublicKey = process.env.NEXT_PUBLIC_TRUSTLINE_WALLET_PUBLIC_KEY;
   if (!adminPublicKey) {

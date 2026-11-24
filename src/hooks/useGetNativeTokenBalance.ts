@@ -2,7 +2,7 @@ import { SorobanContextType, useSorobanReact } from 'stellar-react';
 import { tokenBalance } from './useBalances';
 import useSWRImmutable from 'swr/immutable';
 import nativeTokens from '../../public/native_tokens.json';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 interface FetchBalanceProps {
   sorobanContext: SorobanContextType;
@@ -13,7 +13,7 @@ const fetchBalance = async ({ sorobanContext, address }: FetchBalanceProps) => {
   if (!sorobanContext || !address) throw new Error('Missing sorobanContext or address');
   const {activeNetwork} = sorobanContext;
   if (!activeNetwork) throw new Error('Missing active network');
-  const currentNetwork = passphraseToBackendNetworkName[activeNetwork].toLowerCase();
+  const currentNetwork = getBackendNetworkName(activeNetwork);
 
   const networkNativeToken = nativeTokens.nativeTokens.find(
     (nativeToken) => nativeToken.network === currentNetwork,

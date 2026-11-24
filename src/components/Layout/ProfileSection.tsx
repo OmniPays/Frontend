@@ -7,7 +7,7 @@ import { SorobanContextType, useSorobanReact } from 'stellar-react';
 import { AppContext } from 'contexts';
 import { shortenAddress } from '../../helpers/address';
 import { WalletButton } from 'components/Buttons/WalletButton';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 const StyledMenu = styled((props: MenuProps) => (
   <Menu
@@ -193,8 +193,8 @@ export const HeaderChip = ({
 export const ActiveChainHeaderChip = ({ isMobile }: { isMobile?: boolean }) => {
   const sorobanContext: SorobanContextType = useSorobanReact();
   const { activeNetwork: activeChain, address } = sorobanContext;
-  const activeChainName = passphraseToBackendNetworkName[activeChain!].toLowerCase();
-  const [chainName, setChainName] = React.useState(activeChainName);
+  const activeChainName = getBackendNetworkName(activeChain);
+  const [chainName, setChainName] = React.useState<string>(activeChainName);
   useEffect(() => {
     const formattedActiveChainName = activeChainName.charAt(0).toUpperCase() + activeChainName.slice(1);
     setChainName(formattedActiveChainName);

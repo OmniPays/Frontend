@@ -6,7 +6,7 @@ import ReactGA from 'react-ga';
 import { Field } from 'state/swap/actions';
 import { SwapState } from 'state/swap/reducer';
 import SEO from '../src/components/SEO';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 const TAG_ID = process.env.NEXT_PUBLIC_TAG_ID;
 if (TAG_ID && TAG_ID != '') {
@@ -20,7 +20,7 @@ export default function Home() {
     [Field.INPUT]: { currencyId: null },
     [Field.OUTPUT]: { currencyId: null },
   });
-  const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
   useEffect(() => {
     if (prefilledState.INPUT?.currencyId == null) {
       const newXlmToken =

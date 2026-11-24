@@ -3,7 +3,7 @@ import { SorobanContextType } from 'stellar-react';
 import { addressToScVal, scValToJs } from 'helpers/convert';
 import { fetchFactory } from 'services/factory';
 import { xdr } from '@stellar/stellar-sdk';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export async function getPairAddress(
   address_0: string | undefined,
@@ -12,7 +12,7 @@ export async function getPairAddress(
 ) {
   if (!address_0 || !address_1) return '';
   const { activeNetwork } = sorobanContext;
-  const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
 
   const factory = await fetchFactory(activeChain);
 

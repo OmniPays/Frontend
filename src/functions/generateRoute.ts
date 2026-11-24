@@ -20,7 +20,7 @@ import BigNumber from 'bignumber.js';
 import { getExpectedAmount } from './getExpectedAmount';
 import { Networks } from '@stellar/stellar-sdk';
 import { getQuote } from 'services/soroswapApi';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 import { DEFAULT_SLIPPAGE_INPUT_VALUE } from 'components/Settings/MaxSlippageSettings';
 import { useUserSlippageToleranceWithDefault } from 'state/user/hooks';
 
@@ -60,7 +60,7 @@ export const useSoroswapApi = () => {
         return Networks.TESTNET;
     }
   }, [sorobanContext]);
-  const network = passphraseToBackendNetworkName[getNetwork];
+  const network = getBackendNetworkName(getNetwork);
 
   const getProtocols = useMemo(() => {
     const newProtocols = [];

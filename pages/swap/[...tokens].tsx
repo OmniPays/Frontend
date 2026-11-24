@@ -4,11 +4,11 @@ import { SwapComponent } from 'components/Swap/SwapComponent';
 import { xlmTokenList } from 'constants/xlmToken';
 import { useRouter } from 'next/router';
 import { Field } from 'state/swap/actions';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export default function SwapPage() {
   const { activeNetwork } = useSorobanReact();
-  const activeChain = passphraseToBackendNetworkName[activeNetwork ?? WalletNetwork.TESTNET].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork ?? WalletNetwork.TESTNET);
   const xlmToken = xlmTokenList.find((set) => set.network === activeChain)?.assets
 
   const router = useRouter();

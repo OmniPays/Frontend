@@ -2,7 +2,7 @@ import { SorobanContextType } from 'stellar-react';
 import { getClassicStellarAsset, isAddress } from 'helpers/address';
 import { getTokenDecimals, getTokenName, getTokenSymbol } from 'helpers/soroban';
 import { TokenMapType, TokenType, tokensResponse } from 'interfaces';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export const tokensToMap = (tokens: TokenType[]) => {
   if (!tokens) return {};
@@ -18,7 +18,7 @@ export const addUserToken = (token: TokenType, sorobanContext: SorobanContextTyp
   if (!token) return;
   const {activeNetwork} = sorobanContext;
   if (!activeNetwork) return;
-  const activeChain = passphraseToBackendNetworkName[activeNetwork].toLowerCase();
+    const activeChain = getBackendNetworkName(activeNetwork);
 
   const userAddedTokensStr = localStorage.getItem(`userAddedTokens`) || '[]';
   const userAddedTokens = JSON.parse(userAddedTokensStr) ?? [];
@@ -95,7 +95,7 @@ export const getTokenLogo = async (address: string, sorobanContext: SorobanConte
     const tokenData = await response.json();
     const {activeNetwork} = sorobanContext;
     if (!activeNetwork) return undefined;
-    const activeChain = passphraseToBackendNetworkName[activeNetwork].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
 
     // Find the object that matches the activeChain
     const activeChainTokens = tokenData.find(

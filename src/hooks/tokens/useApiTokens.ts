@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchTokens } from 'services/tokens';
 import useSWRImmutable from 'swr/immutable';
 import { tokensToMap } from './utils';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 //Returns tokens from the API
 export const useApiTokens = () => {
@@ -13,7 +13,7 @@ export const useApiTokens = () => {
   const {activeNetwork} = sorobanContext;
   useEffect(() => {
     if (activeNetwork) {
-      let activeNetworkId = passphraseToBackendNetworkName[activeNetwork].toLowerCase();
+      let activeNetworkId = getBackendNetworkName(activeNetwork);
       setActiveChain(activeNetworkId);
     }
   }, [activeNetwork]);

@@ -3,11 +3,11 @@ import AddLiquidityComponent from 'components/Liquidity/Add/AddLiquidityComponen
 import SEO from 'components/SEO';
 import { xlmTokenList } from 'constants/xlmToken';
 import { useRouter } from 'next/router';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export default function AddLiquidityPage() {
   const { activeNetwork } = useSorobanReact();
-  const activeChain = passphraseToBackendNetworkName[activeNetwork ?? WalletNetwork.TESTNET].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork ?? WalletNetwork.TESTNET);
   const xlmToken = xlmTokenList.find((set) => set.network === activeChain)?.assets
 
   const router = useRouter();

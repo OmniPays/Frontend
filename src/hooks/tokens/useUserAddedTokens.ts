@@ -2,7 +2,7 @@ import { useSorobanReact } from 'stellar-react';
 import { TokenMapType, TokenType, tokensResponse } from 'interfaces';
 import { useEffect, useState } from 'react';
 import { tokensToMap } from './utils';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export const useUserAddedTokens = () => {
   const sorobanContext = useSorobanReact();
@@ -21,7 +21,7 @@ export const useUserAddedTokens = () => {
     }
 
     const activeNetwork = sorobanContext.activeNetwork;
-    const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+    const activeChain = getBackendNetworkName(activeNetwork);
     const activeChainTokens =
       storedTokens?.find((item: tokensResponse) => item?.network === activeChain)?.tokens ?? [];
 

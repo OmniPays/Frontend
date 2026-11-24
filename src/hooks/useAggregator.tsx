@@ -1,7 +1,7 @@
 import { SorobanContextType, useSorobanReact } from 'stellar-react';
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 const aggregatorMainnet = process.env.NEXT_PUBLIC_AGGREGATOR_ENABLED_MAINNET === 'true';
 const aggregatorTestnet = process.env.NEXT_PUBLIC_AGGREGATOR_ENABLED_TESTNET === 'true';
@@ -26,7 +26,7 @@ export const useAggregator = () => {
 
   const [address, setAddress] = useState<string>();
   const [isEnabled, setIsAggregatorEnabled] = useState<boolean>(false);
-  const activeChainId = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChainId = getBackendNetworkName(activeNetwork);
 
   const shouldUseAggregator = useMemo(() => {
     if (activeChainId === 'mainnet') {

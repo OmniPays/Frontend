@@ -11,11 +11,11 @@ import { fetchFactory } from 'services/factory';
 import { xdr } from '@stellar/stellar-sdk';
 import { getPairAddress } from './getPairAddress';
 import { getTotalLpShares } from './getTotalLpShares';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export const getPairsFromFactory = async (sorobanContext: SorobanContextType) => {
   const { activeNetwork } = sorobanContext;
-  const activeChain = passphraseToBackendNetworkName[activeNetwork!].toLowerCase();
+  const activeChain = getBackendNetworkName(activeNetwork);
 
   const factory_address = await fetchFactory(activeChain);
   let pairs = [];

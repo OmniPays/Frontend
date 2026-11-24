@@ -9,7 +9,7 @@ import { TokenMapType, TokenType } from 'interfaces';
 import BigNumber from 'bignumber.js';
 import { getTotalShares } from './LiquidityPools';
 import { fetchPairsFromApi } from 'services/soroswapApi';
-import { passphraseToBackendNetworkName } from 'services/pairs';
+import { getBackendNetworkName } from 'services/pairs';
 
 export type LpTokensObj = {
   token_0: TokenType | undefined;
@@ -31,7 +31,7 @@ const getLpResultsFromBackendPairs = async (
 ) => {
   if (!sorobanContext.address) return;
 
-  const network = passphraseToBackendNetworkName[passphrase].toLowerCase();
+  const network = getBackendNetworkName(passphrase);
   const pairsBackend = await fetchPairsFromApi(network, 'soroswap');
 
   const results: LpTokensObj[] = [];
