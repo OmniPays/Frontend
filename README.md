@@ -142,7 +142,7 @@ yarn test:unit
 1. Build with `yarn build` and serve with `yarn start` (or deploy to a Next.js-compatible host).
 2. Set all server-only variables in the hosting environment: `SOROSWAP_API_URL`, `SOROSWAP_API_KEY`, `TEST_TOKENS_ADMIN_SECRET_KEY` (if minting is needed), `MINT_ALLOWED_CONTRACTS`, RPC overrides, and `ALLOWED_ORIGINS`.
 3. Set `NEXT_PUBLIC_*` values at build time; they are compiled into client bundles.
-4. Restrict `ALLOWED_ORIGINS` to the exact origins of your deployed frontend. Requests with an unknown `Origin`/`Referer` are rejected; requests without one are treated as same-origin/server calls. Allowed origins receive CORS preflight responses, and the mint route additionally enforces a contract allowlist and per-client rate limit.
+4. Restrict `ALLOWED_ORIGINS` to the exact origins of your deployed frontend. API requests must include an allowed `Origin`/`Referer`; requests without one are rejected. Allowed origins receive CORS preflight responses, and the mint route additionally enforces a contract allowlist and a per-client rate limit.
 5. Do not expose provider credentials through `NEXT_PUBLIC_MAINNET_RPC_URL`; use a public endpoint or move RPC access behind your own server proxy.
 
 ## Contributing
