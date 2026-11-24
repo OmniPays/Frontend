@@ -1,36 +1,37 @@
-// pages/api/pairs.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import {
+  getQueryValue,
+  isSupportedNetwork,
+  isSupportedProtocol,
+  rejectIfMethodNotAllowed,
+  rejectIfOriginNotAllowed,
+} from '../../src/server/apiGuards';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const allowedOrigin = ['.soroswap.finance', 'http://localhost:3000', 'paltalabs.vercel.app'];
-  const origin = req.headers.origin || req.headers.referer || '';
+  if (rejectIfOriginNotAllowed(req, res)) return;
+  if (rejectIfMethodNotAllowed(req, res, 'GET')) return;
 
-  if (!allowedOrigin.some((allowed) => origin.includes(allowed))) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-
-  const { network, protocol } = req.query;
+  const network = getQueryValue(req.query.network);
+  const protocol = getQueryValue(req.query.protocol);
 
   if (!network || !protocol) {
     return res.status(400).json({ message: 'Missing "network" or "protocol" query parameter' });
   }
 
+  if (!isSupportedNetwork(network) || !isSupportedProtocol(protocol)) {
+    return res.status(400).json({ message: 'Invalid "network" or "protocol" query parameter' });
+  }
+
   try {
-    const apiKey = process.env.SOROSWAP_API_KEY;
-
-    const pairsResponse = await axios.get(
-      `${process.env.SOROSWAP_API_URL}/pairs?network=${(
-        network as string
-      ).toLowerCase()}&protocol=${(protocol as string).toLowerCase()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
+    const pairsResponse = await axios.get(`${process.env.SOROSWAP_API_URL}/pairs`, {
+      params: { network, protocol },
+      headers: {
+        Authorization: `Bearer ${process.env.SOROSWAP_API_KEY}`,
       },
-    );
+    });
 
-    if ((network as string).toLowerCase() === 'mainnet') {
+    if (network === 'mainnet') {
       const assetList = await axios.get(
         'https://raw.githubusercontent.com/soroswap/token-list/refs/heads/main/tokenList.json',
       );
@@ -48,13 +49,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return (tokenAExists && tokenBExists) || specialToken;
       });
 
-      res.status(200).json(toReturn);
-    } else {
-      res.status(200).json(pairsResponse.data);
+      return res.status(200).json(toReturn);
     }
+
+    return res.status(200).json(pairsResponse.data);
   } catch (error: any) {
     console.error('[API ERROR]', error?.message || error);
-    res
+    return res
       .status(error?.response?.status || 500)
       .json({ message: error?.response?.data?.message || error?.message || 'Server Error' });
   }

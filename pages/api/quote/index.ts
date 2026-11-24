@@ -1,43 +1,38 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import {
+  getQueryValue,
+  isSupportedNetwork,
+  rejectIfMethodNotAllowed,
+  rejectIfOriginNotAllowed,
+} from '../../../src/server/apiGuards';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const allowedOrigin = ['.soroswap.finance', 'http://localhost:3000', 'paltalabs.vercel.app'];
-  const origin = req.headers.origin || req.headers.referer || '';
+  if (rejectIfOriginNotAllowed(req, res)) return;
+  if (rejectIfMethodNotAllowed(req, res, 'POST')) return;
 
-  if (!allowedOrigin.some((allowed) => origin.includes(allowed))) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-
-  const { network } = req.query;
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
-  }
+  const network = getQueryValue(req.query.network);
 
   if (!network) {
     return res.status(400).json({ message: 'Missing "network" query parameter' });
   }
 
+  if (!isSupportedNetwork(network)) {
+    return res.status(400).json({ message: 'Invalid "network" query parameter' });
+  }
+
   try {
-    const apiKey = process.env.SOROSWAP_API_KEY;
-
-    const swapResponse = await axios.post(
-      `${process.env.SOROSWAP_API_URL}/quote?network=${(
-        network as string
-      ).toLowerCase()}`,
-      req.body,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-        },
+    const swapResponse = await axios.post(`${process.env.SOROSWAP_API_URL}/quote`, req.body, {
+      params: { network },
+      headers: {
+        Authorization: `Bearer ${process.env.SOROSWAP_API_KEY}`,
       },
-    );
+    });
 
-    res.status(200).json(swapResponse.data);
+    return res.status(200).json(swapResponse.data);
   } catch (error: any) {
     console.error('[API ERROR]', error?.message || error);
-    res
+    return res
       .status(error?.response?.status || 500)
       .json({ message: error?.response?.data?.message || error?.message || 'Server Error' });
   }
