@@ -79,3 +79,22 @@ export function rejectIfMethodNotAllowed(
   res.status(405).json({ message: 'Method Not Allowed' });
   return true;
 }
+
+export function applyCorsHeaders(req: NextApiRequest, res: NextApiResponse): void {
+  const origin = getRequestOrigin(req);
+  if (!origin || !isAllowedOrigin(req)) return;
+
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Vary', 'Origin');
+}
+
+export function handlePreflight(req: NextApiRequest, res: NextApiResponse): boolean {
+  if (req.method !== 'OPTIONS') return false;
+  if (rejectIfOriginNotAllowed(req, res)) return true;
+
+  applyCorsHeaders(req, res);
+  res.status(204).end();
+  return true;
+}
