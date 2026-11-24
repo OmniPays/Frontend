@@ -59,6 +59,7 @@ Edit the file for your environment. Key settings:
 | `SOROSWAP_API_URL`, `SOROSWAP_API_KEY` | server | Backend routing API base URL and API key; used only by Next API routes. |
 | `ALLOWED_ORIGINS` | server | Comma-separated list of exact origins permitted to call the API routes. Same-origin requests and localhost are always allowed. |
 | `TEST_TOKENS_ADMIN_SECRET_KEY` | server | Secret key of the test-token admin account. Required only to mint test tokens. Never prefix this with `NEXT_PUBLIC_`. |
+| `MINT_ALLOWED_CONTRACTS` | server | Comma-separated `C...` contract IDs the mint route may call. Minting is disabled for every other contract. |
 | `TESTNET_RPC_URL`, `STANDALONE_RPC_URL`, `FUTURENET_RPC_URL` | server | Optional RPC overrides for the mint route; defaults to public endpoints or the local Stellar Quickstart URL. |
 
 Security note: anything prefixed with `NEXT_PUBLIC_` is inlined into client bundles and is readable by anyone. Never put admin keys, API keys, or private RPC credentials in `NEXT_PUBLIC_*` variables. The mint endpoint reads `TEST_TOKENS_ADMIN_SECRET_KEY` only on the server; leaving it unset disables test-token minting.
@@ -139,9 +140,9 @@ yarn test:unit
 ## Deployment
 
 1. Build with `yarn build` and serve with `yarn start` (or deploy to a Next.js-compatible host).
-2. Set all server-only variables in the hosting environment: `SOROSWAP_API_URL`, `SOROSWAP_API_KEY`, `TEST_TOKENS_ADMIN_SECRET_KEY` (if minting is needed), RPC overrides, and `ALLOWED_ORIGINS`.
+2. Set all server-only variables in the hosting environment: `SOROSWAP_API_URL`, `SOROSWAP_API_KEY`, `TEST_TOKENS_ADMIN_SECRET_KEY` (if minting is needed), `MINT_ALLOWED_CONTRACTS`, RPC overrides, and `ALLOWED_ORIGINS`.
 3. Set `NEXT_PUBLIC_*` values at build time; they are compiled into client bundles.
-4. Restrict `ALLOWED_ORIGINS` to the exact origins of your deployed frontend. Requests without a recognized `Origin`/`Referer` are rejected by the API routes.
+4. Restrict `ALLOWED_ORIGINS` to the exact origins of your deployed frontend. Requests with an unknown `Origin`/`Referer` are rejected; requests without one are treated as same-origin/server calls. Allowed origins receive CORS preflight responses, and the mint route additionally enforces a contract allowlist and per-client rate limit.
 5. Do not expose provider credentials through `NEXT_PUBLIC_MAINNET_RPC_URL`; use a public endpoint or move RPC access behind your own server proxy.
 
 ## Contributing
