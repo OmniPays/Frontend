@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "format": "prettier --write \"src/**/*.ts\" \"pages/**/*.ts\"",
+    "format": "prettier --write \"{src,pages,cypress}/**/*.{ts,tsx}\"",
     "cy:run": "cypress run --browser chrome",
     "cy:run:w": "cypress run --spec cypress/e2e/connectWallet.test.ts"
   },

@@ -56,11 +56,25 @@ jobs:
         with:
           node-version: '20.10.0'
 
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
       - name: Install cypress
         run: yarn cypress install --force
 
       - name: Run app
         run: yarn pm2 start next
+
+      - name: Wait for app
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://localhost:3000 > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not become ready at http://localhost:3000" >&2
+          exit 1
 
       - name: Run test
         run: yarn cy:run
