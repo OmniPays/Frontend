@@ -1,13 +1,12 @@
-import { contractInvoke } from 'stellar-react';
 import { useSorobanReact } from 'stellar-react';
 import BigNumber from 'bignumber.js';
 import { SnackbarIconType } from 'contexts';
-import { bigNumberToI128 } from 'helpers/utils';
 import { TokenType } from 'interfaces';
 import { useCallback } from 'react';
-import * as StellarSdk from '@stellar/stellar-sdk';
+import { mintTestToken } from 'services/mint';
 import { useApiTokens } from './tokens/useApiTokens';
 import useNotification from './useNotification';
+
 interface MintTestTokenProps {
   onTokenMintedStart?: (token: TokenType) => void;
   onTokenMintedSuccess?: (token: TokenType) => void;
@@ -16,10 +15,6 @@ interface MintTestTokenProps {
 
 export function useMintTestToken() {
   const sorobanContext = useSorobanReact();
-  const admin_account = StellarSdk.Keypair.fromSecret(
-    process.env.NEXT_PUBLIC_TEST_TOKENS_ADMIN_SECRET_KEY as string,
-  );
-
   const { tokens } = useApiTokens();
   const { notify } = useNotification();
 
@@ -29,49 +24,28 @@ export function useMintTestToken() {
       onTokenMintedSuccess,
       onTokenMintedError,
     }: MintTestTokenProps) => {
-      const server = sorobanContext.sorobanServer;
       const account = sorobanContext.address;
 
-      const amountScVal = bigNumberToI128(BigNumber(2500000).shiftedBy(7));
-      let adminSource;
+      if (!account) return;
 
-      try {
-        adminSource = await server?.getAccount(admin_account.publicKey());
-      } catch (error) {
-        alert('Your wallet or the token admin wallet might not be funded');
-        return;
-      }
-
-      if (!account) {
-        return;
-      }
-      if (!adminSource) {
-        return;
-      }
-
-      let result;
+      const amount = BigNumber(2500000).shiftedBy(7);
       let totalMinted = 0;
 
       for (const token of tokens) {
         try {
           onTokenMintedStart?.(token);
-          result = (await contractInvoke({
-            contractAddress: token.contract,
-            method: 'mint',
-            args: [new StellarSdk.Address(account).toScVal(), amountScVal],
-            sorobanContext,
-            signAndSend: true,
-            secretKey: admin_account.secret(),
-            reconnectAfterTx: false,
-          })) as StellarSdk.rpc.Api.GetTransactionResponse;
+          const response = await mintTestToken({
+            network: sorobanContext.activeNetwork,
+            contractId: token.contract,
+            destination: account,
+            amount,
+          });
 
-          if (result.status !== StellarSdk.rpc.Api.GetTransactionStatus.SUCCESS)
-            throw result;
+          if (response.status !== 'SUCCESS') throw new Error(response.status);
 
           totalMinted++;
           onTokenMintedSuccess?.(token);
         } catch (error) {
-          console.warn('Error minting token', error);
           onTokenMintedError?.(token);
         }
       }
@@ -90,6 +64,6 @@ export function useMintTestToken() {
         });
       }
     },
-    [admin_account, sorobanContext, tokens, notify],
+    [sorobanContext, tokens, notify],
   );
 }

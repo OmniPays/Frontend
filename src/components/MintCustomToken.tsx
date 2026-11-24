@@ -1,6 +1,5 @@
-import { contractInvoke, setTrustline } from 'stellar-react';
+import { setTrustline } from 'stellar-react';
 import { useContext, useEffect, useState } from 'react';
-import * as StellarSdk from '@stellar/stellar-sdk';
 
 import { AppContext, SnackbarIconType } from 'contexts';
 
@@ -17,7 +16,7 @@ import { sendNotification } from 'functions/sendNotification';
 import BigNumber from 'bignumber.js';
 import { getClassicStellarAsset, isAddress, shortenAddress } from 'helpers/address';
 import { requiresTrustline } from 'helpers/stellar';
-import { bigNumberToI128 } from 'helpers/utils';
+import { getTestTokenAdminPublicKey, mintTestToken } from 'services/mint';
 
 import { useAllTokens } from 'hooks/tokens/useAllTokens';
 import { findToken, useToken } from 'hooks/tokens/useToken';
@@ -25,10 +24,7 @@ import useGetMyBalances from 'hooks/useGetMyBalances';
 
 export function MintCustomToken() {
   const { sorobanContext, refetch } = useGetMyBalances();
-  const { sorobanServer: server, address } = sorobanContext;
-  const admin_account = StellarSdk.Keypair.fromSecret(
-    process.env.NEXT_PUBLIC_TEST_TOKENS_ADMIN_SECRET_KEY as string,
-  );
+  const { address } = sorobanContext;
 
   const { SnackbarContext } = useContext(AppContext);
   const { tokensAsMap } = useAllTokens();
@@ -42,75 +38,78 @@ export function MintCustomToken() {
   const [tokenAddress, setTokenAddress] = useState<string>('');
   const [tokenAmount, setTokenAmount] = useState<string | number>('');
   const [tokenSymbol, setTokenSymbol] = useState<string>('');
+  const [adminPublicKey, setAdminPublicKey] = useState<string>();
 
   const { token, needsWrapping, handleTokenRefresh } = useToken(tokenAddress);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    getTestTokenAdminPublicKey()
+      .then((publicKey) => {
+        if (!cancelled) setAdminPublicKey(publicKey);
+      })
+      .catch(() => {
+        if (!cancelled) setAdminPublicKey(undefined);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleMint = async () => {
     setIsMinting(true);
-    if (!tokenAddress || !tokenAmount) {
-      setIsMinting(false);
-      throw new Error('Token address or amount is missing');
-    }
-    const amount = new BigNumber(tokenAmount ?? 0).shiftedBy(7);
-    const amountScVal = bigNumberToI128(amount);
-
-    let adminSource, walletSource;
-    try {
-      console.log('fetching admin account');
-      adminSource = await server?.getAccount(admin_account.publicKey());
-    } catch (error) {
-      console.log(error);
-      alert(`Your wallet or the token admin wallet might not be funded.`);
-      setIsMinting(false);
-      return;
-    }
-
-    if (!address) {
-      return;
-    }
-    if (!adminSource) {
-      return;
-    }
 
     try {
-      let result = await contractInvoke({
-        contractAddress: token?.contract as string,
-        method: 'mint',
-        args: [new StellarSdk.Address(address).toScVal(), amountScVal],
-        sorobanContext,
-        signAndSend: true,
-        secretKey: admin_account.secret(),
-      });
-      console.log('🚀 « result:', result);
-      if (result) {
-        setIsMinting(false);
-        sendNotification(
-          `Minted ${tokenAmount} ${shortenAddress(token?.contract as string)}`,
-          'Minted',
-          SnackbarIconType.MINT,
-          SnackbarContext,
-        );
-        refetch();
-        setTokenAddress('');
-        setTokenAmount('');
+      if (!tokenAddress || !tokenAmount || !address) {
+        throw new Error('Token address, amount, and connected wallet are required');
       }
 
+      const contractId = token?.contract ?? tokenAddress;
+      const response = await mintTestToken({
+        network: sorobanContext.activeNetwork,
+        contractId,
+        destination: address,
+        amount: new BigNumber(tokenAmount).shiftedBy(7),
+      });
+
+      if (response.status !== 'SUCCESS') {
+        throw new Error('Mint transaction did not succeed');
+      }
+
+      setIsMinting(false);
+      sendNotification(
+        `Minted ${tokenAmount} ${shortenAddress(contractId)}`,
+        'Minted',
+        SnackbarIconType.MINT,
+        SnackbarContext,
+      );
+      refetch();
+      setTokenAddress('');
+      setTokenAmount('');
       handleTokenRefresh();
     } catch (error) {
-      console.log('Catch error while minting', error);
       setIsMinting(false);
+      sendNotification(
+        'Unable to mint the requested token',
+        'Mint failed',
+        SnackbarIconType.ERROR,
+        SnackbarContext,
+      );
     }
   };
 
   const handleSetTrustline = () => {
+    if (!adminPublicKey) return;
+
     setIsSettingTrustline(true);
-    console.log('SETTING TRUSTLINE');
     setTrustline({
       tokenSymbol: tokenSymbol,
-      tokenAdmin: admin_account.publicKey(),
+      tokenAdmin: adminPublicKey,
       sorobanContext,
     })
-      .then((resp) => {
+      .then(() => {
         setNeedToSetTrustline(false);
         sendNotification(
           `for ${tokenSymbol}`,
@@ -120,9 +119,13 @@ export function MintCustomToken() {
         );
         setButtonText('Mint custom token');
       })
-      .catch((error: any) => {
-        setIsSettingTrustline(false);
-        console.log('Error setting trustline', error);
+      .catch(() => {
+        sendNotification(
+          'Unable to set the trustline',
+          'Trustline failed',
+          SnackbarIconType.ERROR,
+          SnackbarContext,
+        );
       })
       .finally(() => {
         setIsSettingTrustline(false);
@@ -136,7 +139,6 @@ export function MintCustomToken() {
     switch (true) {
       case wrapToken:
         setIsLoading(true);
-        console.log(isLoading);
         setShowWrapStellarAssetModal(true);
         setNeedToSetTrustline(true);
         handleTokenRefresh();
@@ -152,7 +154,6 @@ export function MintCustomToken() {
         setTokenAddress('');
         break;
       default:
-        console.log('case not handled');
         break;
     }
   };
@@ -168,8 +169,6 @@ export function MintCustomToken() {
     } else {
       if (isAddress(tokenAddress)) {
         handleMint();
-      } else {
-        console.log('Invalid address || token || asset');
       }
     }
   };
